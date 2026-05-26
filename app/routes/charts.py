@@ -3,4 +3,4 @@ bp = Blueprint("charts", __name__)
 
 @bp.route("/charts")
 def charts():
-    return "ok"
+    return render_template("charts.html")

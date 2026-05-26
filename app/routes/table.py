@@ -3,4 +3,4 @@ bp = Blueprint("table", __name__)
 
 @bp.route("/")
 def index():
-    return "ok"
+    return render_template("table.html")
