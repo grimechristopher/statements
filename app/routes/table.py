@@ -108,3 +108,12 @@ def delete_row(row_id):
 @bp.route("/rows/new/cancel-new")
 def cancel_new():
     return ""
+
+@bp.route("/people", methods=["POST"])
+def add_person():
+    db = get_db()
+    name = request.form.get("name", "").strip()
+    if name:
+        db.execute("INSERT OR IGNORE INTO people (name) VALUES (?)", (name,))
+        db.commit()
+    return redirect(url_for("table.index"))
