@@ -1,4 +1,155 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Charts</h1>
+
+<div class="flex items-center gap-4 mb-6">
+  <h1 class="text-xl font-semibold">Charts</h1>
+  <select id="person-filter" class="border rounded px-2 py-1 text-sm">
+    <option value="">All People</option>
+    {% for p in people %}
+      <option value="{{ p.id }}">{{ p.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<!-- Summary Cards -->
+<div id="summary-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+<!-- Charts grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">Gross Pay Over Time</h2>
+    <canvas id="chart-gross"></canvas>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">Tax % Over Time</h2>
+    <canvas id="chart-taxes-pct"></canvas>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">Savings % Over Time</h2>
+    <canvas id="chart-savings-pct"></canvas>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">401k Contributions Per Period</h2>
+    <canvas id="chart-401k"></canvas>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">Hours Worked Per Period</h2>
+    <canvas id="chart-hours"></canvas>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <h2 class="text-sm font-medium text-gray-600 mb-3">Annual Totals (Gross / Taxes / 401k)</h2>
+    <canvas id="chart-annual"></canvas>
+  </div>
+
+</div>
+
+<script>
+const charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function lineChart(canvasId, labels, datasets, yPrefix="") {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[canvasId] = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: datasets.length > 1 } },
+      scales: {
+        y: { ticks: { callback: v => yPrefix + v.toLocaleString() } }
+      },
+      elements: { point: { radius: 2 } }
+    }
+  });
+}
+
+function barChart(canvasId, labels, datasets, yPrefix="") {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[canvasId] = new Chart(ctx, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: datasets.length > 1 } },
+      scales: {
+        y: { ticks: { callback: v => yPrefix + v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function loadCharts() {
+  const personId = document.getElementById("person-filter").value;
+  fetch("/api/chart-data?person_id=" + personId)
+    .then(r => r.json())
+    .then(({ rows, ytd }) => {
+      const labels = rows.map(r => r.date);
+
+      // Summary cards
+      const years = Object.keys(ytd).sort();
+      const latestYear = years[years.length - 1];
+      const ly = ytd[latestYear] || {};
+      document.getElementById("summary-cards").innerHTML = `
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">${latestYear} Gross</div>
+          <div class="text-2xl font-bold">$${ly.gross.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">${latestYear} Taxes</div>
+          <div class="text-2xl font-bold text-red-500">$${ly.taxes.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">${latestYear} 401k</div>
+          <div class="text-2xl font-bold text-green-600">$${ly.k401.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">${latestYear} Cash Saved</div>
+          <div class="text-2xl font-bold text-blue-600">$${ly.savings.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+        </div>
+      `;
+
+      lineChart("chart-gross", labels,
+        [{ label: "Gross", data: rows.map(r => r.gross), borderColor: "#3b82f6", backgroundColor: "rgba(59,130,246,0.1)", fill: true, tension: 0.3 }],
+        "$");
+
+      lineChart("chart-taxes-pct", labels,
+        [{ label: "Tax %", data: rows.map(r => r.taxes_pct), borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.1)", fill: true, tension: 0.3 }],
+        "");
+
+      lineChart("chart-savings-pct", labels,
+        [{ label: "Savings %", data: rows.map(r => r.savings_pct), borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.1)", fill: true, tension: 0.3 }],
+        "");
+
+      barChart("chart-401k", labels,
+        [{ label: "401k", data: rows.map(r => r.total_401k), backgroundColor: "#6366f1" }],
+        "$");
+
+      barChart("chart-hours", labels,
+        [{ label: "Hours", data: rows.map(r => r.hours_worked), backgroundColor: "#f59e0b" }],
+        "");
+
+      // Annual grouped bar
+      const annualLabels = years;
+      barChart("chart-annual", annualLabels, [
+        { label: "Gross",  data: annualLabels.map(y => ytd[y].gross),  backgroundColor: "#3b82f6" },
+        { label: "Taxes",  data: annualLabels.map(y => ytd[y].taxes),  backgroundColor: "#ef4444" },
+        { label: "401k",   data: annualLabels.map(y => ytd[y].k401),   backgroundColor: "#6366f1" },
+      ], "$");
+    });
+}
+
+document.getElementById("person-filter").addEventListener("change", loadCharts);
+loadCharts();
+</script>
 {% endblock %}
