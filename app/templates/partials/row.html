@@ -1,0 +1,24 @@
+<tr id="row-{{ row.id }}" class="border-b border-gray-100 hover:bg-gray-50 text-sm">
+  <td class="px-3 py-2">{{ row.pay_date }}</td>
+  <td class="px-3 py-2">{{ row.person_name }}</td>
+  <td class="px-3 py-2">{{ row.source }}</td>
+  <td class="px-3 py-2 text-right">{{ "%.2f"|format(row.hours_worked) if row.hours_worked else "" }}</td>
+  <td class="px-3 py-2 text-right">${{ "%.2f"|format(row.gross) if row.gross else "" }}</td>
+  <td class="px-3 py-2 text-right">${{ "%.2f"|format(row.total_taxes) if row.total_taxes else "" }}</td>
+  <td class="px-3 py-2 text-right">{{ "%.2f"|format(row.taxes_pct) if row.taxes_pct else "" }}%</td>
+  <td class="px-3 py-2 text-right">${{ "%.2f"|format(row.total_401k) if row.total_401k else "" }}</td>
+  <td class="px-3 py-2 text-right">${{ "%.2f"|format(row.hsa) if row.hsa else "" }}</td>
+  <td class="px-3 py-2 text-right">${{ "%.2f"|format(row.cash_savings) if row.cash_savings else "" }}</td>
+  <td class="px-3 py-2 text-right">{{ "%.2f"|format(row.savings_pct) if row.savings_pct else "" }}%</td>
+  <td class="px-3 py-2">
+    <button class="text-blue-500 hover:text-blue-700 text-xs mr-2"
+      hx-get="/rows/{{ row.id }}/edit"
+      hx-target="#row-{{ row.id }}"
+      hx-swap="outerHTML">Edit</button>
+    <button class="text-red-400 hover:text-red-600 text-xs"
+      hx-delete="/rows/{{ row.id }}/delete"
+      hx-target="#row-{{ row.id }}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this row?">Del</button>
+  </td>
+</tr>

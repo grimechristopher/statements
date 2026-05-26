@@ -1,0 +1,38 @@
+<tr id="{{ 'row-' + row.id|string if row else 'row-new' }}" class="border-b border-blue-100 bg-blue-50 text-sm">
+  <form hx-post="{{ '/rows/' + row.id|string if row and mode == 'edit' else '/rows' }}"
+        hx-target="{{ '#row-' + row.id|string if row and mode == 'edit' else '#row-new' }}"
+        hx-swap="outerHTML">
+
+    <td class="px-2 py-1"><input name="pay_date" value="{{ row.pay_date if row else '' }}" placeholder="1/5/2024" class="w-24 border rounded px-1 py-0.5 text-xs"></td>
+    <td class="px-2 py-1">
+      <select name="person_id" class="border rounded px-1 py-0.5 text-xs">
+        {% for p in people %}
+          <option value="{{ p.id }}" {{ 'selected' if row and row.person_id == p.id else '' }}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td class="px-2 py-1"><input name="source" value="{{ row.source if row else 'Safran' }}" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
+    <td class="px-2 py-1"><input name="hours_worked" value="{{ row.hours_worked if row and row.hours_worked else '' }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="80.5"></td>
+    <td class="px-2 py-1"><input name="gross" value="{{ row.gross if row and row.gross else '' }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="3500"></td>
+    <td class="px-2 py-1"><input name="total_taxes" value="{{ row.total_taxes if row and row.total_taxes else '' }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="850"></td>
+    <td class="px-2 py-1"><input name="taxes_pct" value="{{ row.taxes_pct if row and row.taxes_pct else '' }}" class="w-14 border rounded px-1 py-0.5 text-xs" placeholder="24.1"></td>
+    <td class="px-2 py-1"><input name="total_401k" value="{{ row.total_401k if row and row.total_401k else '' }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="450"></td>
+    <td class="px-2 py-1"><input name="hsa" value="{{ row.hsa if row and row.hsa else '' }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="121"></td>
+    <td class="px-2 py-1"><input name="cash_savings" value="{{ row.cash_savings if row and row.cash_savings else '' }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="400"></td>
+    <td class="px-2 py-1"><input name="savings_pct" value="{{ row.savings_pct if row and row.savings_pct else '' }}" class="w-14 border rounded px-1 py-0.5 text-xs" placeholder="22.3"></td>
+    <td class="px-2 py-1 flex gap-1 items-center">
+      <button type="submit" class="text-xs bg-blue-500 text-white px-2 py-0.5 rounded hover:bg-blue-600">Save</button>
+      {% if row and mode == 'edit' %}
+      <button type="button" class="text-xs text-gray-500 hover:text-gray-700"
+        hx-get="/rows/{{ row.id }}/cancel"
+        hx-target="#row-{{ row.id }}"
+        hx-swap="outerHTML">Cancel</button>
+      {% else %}
+      <button type="button" class="text-xs text-gray-500 hover:text-gray-700"
+        hx-get="/rows/new/cancel-new"
+        hx-target="#row-new"
+        hx-swap="outerHTML">Cancel</button>
+      {% endif %}
+    </td>
+  </form>
+</tr>
