@@ -1,3 +1,34 @@
-pay.db
+# Database
+*.db
+
+# Environment / secrets
+.env
+
+# Personal data — pay statements, exports, CSVs
+*.csv
+*.zip
+extracted/
+
+# Logs
+*.log
+
+# Screenshots and generated images
+*.png
+
+# Internal tooling / scratch files
+claudetools/
+docs/plans/
+make_summary.py
+parse_statements.py
+monarch_reauth.py
+monarch_seed.py
+ashley_pay_summary.csv
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+
+# Claude session state
+.claude/
