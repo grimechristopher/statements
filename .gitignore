@@ -17,7 +17,7 @@ extracted/
 
 # Internal tooling / scratch files
 claudetools/
-docs/plans/
+docs/
 make_summary.py
 parse_statements.py
 monarch_reauth.py
