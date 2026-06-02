@@ -1,0 +1,39 @@
+{{ define "partial" }}
+<tr id="{{ if .Row }}row-{{ .Row.ID }}{{ else }}row-new{{ end }}" class="border-b border-blue-100 bg-blue-50 text-sm">
+  <form hx-post="{{ if and .Row (eq .Mode "edit") }}/rows/{{ .Row.ID }}{{ else }}/rows{{ end }}"
+        hx-target="{{ if and .Row (eq .Mode "edit") }}#row-{{ .Row.ID }}{{ else }}#row-new{{ end }}"
+        hx-swap="outerHTML">
+    <td class="px-2 py-1"><input name="pay_date" value="{{ if .Row }}{{ .Row.PayDate }}{{ end }}" placeholder="1/5/2024" class="w-24 border rounded px-1 py-0.5 text-xs"></td>
+    <td class="px-2 py-1">
+      <select name="person_id" class="border rounded px-1 py-0.5 text-xs">
+        {{ range .People }}
+          <option value="{{ .ID }}" {{ if and $.Row (eq $.Row.PersonID .ID) }}selected{{ end }}>{{ .Name }}</option>
+        {{ end }}
+      </select>
+    </td>
+    <td class="px-2 py-1"><input name="source" value="{{ if .Row }}{{ .Row.Source }}{{ else }}Safran{{ end }}" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
+    <td class="px-2 py-1"><input name="hours_worked" value="{{ if .Row }}{{ fmtF .Row.HoursWorked }}{{ end }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="80.5"></td>
+    <td class="px-2 py-1"><input name="gross" value="{{ if .Row }}{{ fmtF .Row.Gross }}{{ end }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="3500"></td>
+    <td class="px-2 py-1"><input name="total_taxes" value="{{ if .Row }}{{ fmtF .Row.TotalTaxes }}{{ end }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="850"></td>
+    <td class="px-2 py-1"><input name="taxes_pct" value="" class="w-14 border rounded px-1 py-0.5 text-xs" placeholder="auto"></td>
+    <td class="px-2 py-1"><input name="total_401k" value="{{ if .Row }}{{ fmtF .Row.Total401k }}{{ end }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="450"></td>
+    <td class="px-2 py-1"><input name="hsa" value="{{ if .Row }}{{ fmtF .Row.HSA }}{{ end }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="121"></td>
+    <td class="px-2 py-1"><input name="cash_savings" value="{{ if .Row }}{{ fmtF .Row.CashSavings }}{{ end }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="400"></td>
+    <td class="px-2 py-1"><input name="savings_pct" value="" class="w-14 border rounded px-1 py-0.5 text-xs" placeholder="auto"></td>
+    <td class="px-2 py-1 flex gap-1 items-center">
+      <button type="submit" class="text-xs bg-blue-500 text-white px-2 py-0.5 rounded hover:bg-blue-600">Save</button>
+      {{ if and .Row (eq .Mode "edit") }}
+      <button type="button" class="text-xs text-gray-500 hover:text-gray-700"
+        hx-get="/rows/{{ .Row.ID }}/cancel"
+        hx-target="#row-{{ .Row.ID }}"
+        hx-swap="outerHTML">Cancel</button>
+      {{ else }}
+      <button type="button" class="text-xs text-gray-500 hover:text-gray-700"
+        hx-get="/rows/cancel-new"
+        hx-target="#row-new"
+        hx-swap="outerHTML">Cancel</button>
+      {{ end }}
+    </td>
+  </form>
+</tr>
+{{ end }}

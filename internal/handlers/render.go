@@ -10,6 +10,24 @@ import (
 	"path/filepath"
 )
 
+// RenderPageWithPartials is like RenderPage but also parses additional partial files
+// (needed when a page template calls {{ template "partial" . }} inline).
+func RenderPageWithPartials(w http.ResponseWriter, page string, partials []string, data any) {
+	files := []string{"templates/base.html", filepath.Join("templates", page+".html")}
+	for _, p := range partials {
+		files = append(files, filepath.Join("templates/partials", p+".html"))
+	}
+	t, err := template.New("").Funcs(templateFuncs).ParseFiles(files...)
+	if err != nil {
+		log.Printf("parse page %s: %v", page, err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	if err := t.ExecuteTemplate(w, "base", data); err != nil {
+		log.Printf("execute page %s: %v", page, err)
+	}
+}
+
 var templateFuncs = template.FuncMap{
 	"toJSON": func(v any) (template.JS, error) {
 		b, err := json.Marshal(v)

@@ -1,0 +1,62 @@
+{{ define "content" }}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Pay Statements</h1>
+  <button class="text-sm bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600"
+    hx-get="/rows/new"
+    hx-target="#row-new-placeholder"
+    hx-swap="outerHTML">+ Add Row</button>
+</div>
+
+<form method="get" class="flex gap-3 mb-4 text-sm">
+  <select name="person_id" class="border rounded px-2 py-1">
+    <option value="">All People</option>
+    {{ range .People }}
+      <option value="{{ .ID }}" {{ if eq (printf "%d" .ID) $.PersonFilter }}selected{{ end }}>{{ .Name }}</option>
+    {{ end }}
+  </select>
+  <select name="source" class="border rounded px-2 py-1">
+    <option value="">All Sources</option>
+    {{ range .Sources }}
+      <option value="{{ . }}" {{ if eq . $.SourceFilter }}selected{{ end }}>{{ . }}</option>
+    {{ end }}
+  </select>
+  <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded">Filter</button>
+  <a href="/" class="text-gray-400 hover:text-gray-600 px-2 py-1">Clear</a>
+</form>
+
+<div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+      <tr>
+        <th class="px-3 py-2 text-left">Date</th>
+        <th class="px-3 py-2 text-left">Person</th>
+        <th class="px-3 py-2 text-left">Source</th>
+        <th class="px-3 py-2 text-right">Hours</th>
+        <th class="px-3 py-2 text-right">Gross</th>
+        <th class="px-3 py-2 text-right">Taxes</th>
+        <th class="px-3 py-2 text-right">Tax%</th>
+        <th class="px-3 py-2 text-right">401k</th>
+        <th class="px-3 py-2 text-right">HSA</th>
+        <th class="px-3 py-2 text-right">Cash Saved</th>
+        <th class="px-3 py-2 text-right">Sav%</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody id="statements-tbody">
+      <tr id="row-new-placeholder"></tr>
+      {{ range .Rows }}
+        {{ template "partial" . }}
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-gray-400 mt-2">{{ len .Rows }} rows</p>
+
+<div class="mt-8 border-t pt-4">
+  <h2 class="text-sm font-medium text-gray-600 mb-2">People</h2>
+  <form method="post" action="/people" class="flex gap-2">
+    <input name="name" placeholder="Add person" class="border rounded px-2 py-1 text-sm">
+    <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded text-sm">Add</button>
+  </form>
+</div>
+{{ end }}

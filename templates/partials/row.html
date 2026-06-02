@@ -1,0 +1,26 @@
+{{ define "partial" }}
+<tr id="row-{{ .ID }}" class="border-b border-gray-100 hover:bg-gray-50 text-sm">
+  <td class="px-3 py-2">{{ .PayDate }}</td>
+  <td class="px-3 py-2">{{ .PersonName }}</td>
+  <td class="px-3 py-2">{{ .Source }}</td>
+  <td class="px-3 py-2 text-right">{{ fmtF .HoursWorked }}</td>
+  <td class="px-3 py-2 text-right">{{ if .Gross }}${{ fmtF .Gross }}{{ end }}</td>
+  <td class="px-3 py-2 text-right">{{ if .TotalTaxes }}${{ fmtF .TotalTaxes }}{{ end }}</td>
+  <td class="px-3 py-2 text-right">{{ fmtPct .TaxesPct }}</td>
+  <td class="px-3 py-2 text-right">{{ if .Total401k }}${{ fmtF .Total401k }}{{ end }}</td>
+  <td class="px-3 py-2 text-right">{{ if .HSA }}${{ fmtF .HSA }}{{ end }}</td>
+  <td class="px-3 py-2 text-right">{{ if .CashSavings }}${{ fmtF .CashSavings }}{{ end }}</td>
+  <td class="px-3 py-2 text-right">{{ fmtPct .SavingsPct }}</td>
+  <td class="px-3 py-2">
+    <button class="text-blue-500 hover:text-blue-700 text-xs mr-2"
+      hx-get="/rows/{{ .ID }}/edit"
+      hx-target="#row-{{ .ID }}"
+      hx-swap="outerHTML">Edit</button>
+    <button class="text-red-400 hover:text-red-600 text-xs"
+      hx-delete="/rows/{{ .ID }}/delete"
+      hx-target="#row-{{ .ID }}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this row?">Del</button>
+  </td>
+</tr>
+{{ end }}
