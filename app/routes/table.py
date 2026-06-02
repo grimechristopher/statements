@@ -49,15 +49,23 @@ def update_row(row_id):
         val = f.get(key, "").strip()
         return float(val) if val else None
 
+    gross = fv("gross")
+    taxes = fv("total_taxes")
+    k401  = fv("total_401k")
+    hsa   = fv("hsa")
+    cash  = fv("cash_savings")
+    taxes_pct   = round(taxes / gross * 100, 2) if gross and taxes else None
+    savings_pct = round(((k401 or 0) + (hsa or 0) + (cash or 0)) / gross * 100, 2) if gross else None
+
     db.execute("""
         UPDATE pay_statements SET
             person_id=?, source=?, pay_date=?, hours_worked=?, gross=?,
             total_taxes=?, taxes_pct=?, total_401k=?, hsa=?, cash_savings=?, savings_pct=?
         WHERE id=?
     """, (f["person_id"], f["source"], f["pay_date"],
-          fv("hours_worked"), fv("gross"), fv("total_taxes"),
-          fv("taxes_pct"), fv("total_401k"), fv("hsa"),
-          fv("cash_savings"), fv("savings_pct"), row_id))
+          fv("hours_worked"), gross, taxes,
+          taxes_pct, k401, hsa,
+          cash, savings_pct, row_id))
     db.commit()
     row = db.execute("SELECT ps.*, p.name as person_name FROM pay_statements ps JOIN people p ON ps.person_id = p.id WHERE ps.id = ?", (row_id,)).fetchone()
     people = get_people()
@@ -83,15 +91,23 @@ def add_row():
         val = f.get(key, "").strip()
         return float(val) if val else None
 
+    gross = fv("gross")
+    taxes = fv("total_taxes")
+    k401  = fv("total_401k")
+    hsa   = fv("hsa")
+    cash  = fv("cash_savings")
+    taxes_pct   = round(taxes / gross * 100, 2) if gross and taxes else None
+    savings_pct = round(((k401 or 0) + (hsa or 0) + (cash or 0)) / gross * 100, 2) if gross else None
+
     db.execute("""
         INSERT INTO pay_statements
         (person_id, source, pay_date, hours_worked, gross, total_taxes,
          taxes_pct, total_401k, hsa, cash_savings, savings_pct)
         VALUES (?,?,?,?,?,?,?,?,?,?,?)
     """, (f["person_id"], f["source"], f["pay_date"],
-          fv("hours_worked"), fv("gross"), fv("total_taxes"),
-          fv("taxes_pct"), fv("total_401k"), fv("hsa"),
-          fv("cash_savings"), fv("savings_pct")))
+          fv("hours_worked"), gross, taxes,
+          taxes_pct, k401, hsa,
+          cash, savings_pct))
     db.commit()
     new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     row = db.execute("SELECT ps.*, p.name as person_name FROM pay_statements ps JOIN people p ON ps.person_id = p.id WHERE ps.id = ?", (new_id,)).fetchone()
