@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,10 +32,14 @@ var cpi = map[string]float64{
 	"2026-04": 333.020, "2026-05": 333.020,
 }
 
-const (
-	cpiBase          = 289.109      // 2022-04
-	baseSalaryPeriod = BASE_ANNUAL_SALARY.0 / 26 // ~$3,346 bi-weekly
-)
+const cpiBase = 289.109 // CPI-U 2022-04
+
+// baseSalaryPeriod returns the bi-weekly base salary from BASE_ANNUAL_SALARY env.
+// Returns 0 if unset — inflation line is omitted from charts.
+func baseSalaryPeriod() float64 {
+	annual, _ := strconv.ParseFloat(os.Getenv("BASE_ANNUAL_SALARY"), 64)
+	return annual / 26
+}
 
 // ToISO converts M/D/YYYY or MM/DD/YYYY to YYYY-MM-DD.
 func ToISO(s string) string {
@@ -56,7 +61,8 @@ func ToISO(s string) string {
 }
 
 func inflationAdjusted(isoDate string) *float64 {
-	if len(isoDate) < 7 {
+	base := baseSalaryPeriod()
+	if base == 0 || len(isoDate) < 7 {
 		return nil
 	}
 	ym := isoDate[:7]
@@ -64,7 +70,7 @@ func inflationAdjusted(isoDate string) *float64 {
 	if !ok {
 		return nil
 	}
-	result := math_round2(baseSalaryPeriod * v / cpiBase)
+	result := math_round2(base * v / cpiBase)
 	return &result
 }
 

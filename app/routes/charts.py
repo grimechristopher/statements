@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, render_template, jsonify, request
 from app.db import get_db
 
@@ -5,7 +6,8 @@ bp = Blueprint("charts", __name__)
 
 # CPI-U monthly values (CUUR0000SA0) sourced from BLS, Apr 2022 – Apr 2026.
 # Base month is 2022-04 (first paycheck). Inflate salary by CPI ratio for each period.
-_BASE_SALARY_BIWEEKLY = BASE_ANNUAL_SALARY / 26  # ~$3,346 per bi-weekly period
+_BASE_ANNUAL_SALARY = float(os.environ.get("BASE_ANNUAL_SALARY", "0"))
+_BASE_SALARY_BIWEEKLY = _BASE_ANNUAL_SALARY / 26 if _BASE_ANNUAL_SALARY else 0
 
 _CPI = {
     "2022-01": 281.148, "2022-02": 283.716, "2022-03": 287.504,
@@ -30,6 +32,8 @@ _CPI = {
 _CPI_BASE = _CPI["2022-04"]
 
 def _inflation_adjusted(iso_date):
+    if not _BASE_SALARY_BIWEEKLY:
+        return None
     ym = iso_date[:7]  # "YYYY-MM"
     cpi = _CPI.get(ym)
     if cpi is None:
