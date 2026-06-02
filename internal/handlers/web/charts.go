@@ -239,6 +239,42 @@ func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 			)
 		}
 
+	case "retirement-summary":
+		retData, err := services.GetBalanceChartData(db)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		if len(retData.TotalHistory) == 0 {
+			fmt.Fprint(w, `<p class="text-sm text-gray-400 col-span-4">No investment data — sync from the Balances tab.</p>`)
+			return
+		}
+		latest := retData.TotalHistory[len(retData.TotalHistory)-1]
+		cx := retData.Projections.ContribCrossed
+		coastX := retData.Projections.CoastCrossed
+		cxLabel := "Beyond 2069"
+		if cx != nil {
+			cxLabel = cx.Date[:4] + " · age " + strconv.Itoa(cx.Age)
+		}
+		coastLabel := "Beyond 2069"
+		if coastX != nil {
+			coastLabel = coastX.Date[:4] + " · age " + strconv.Itoa(coastX.Age)
+		}
+		for _, card := range []struct{ Title, Val, Class string }{
+			{"Current Balance", "$" + strconv.FormatFloat(latest.Value, 'f', 0, 64), "text-gray-900"},
+			{fmt.Sprintf("Monthly 401k + Roth"), "$" + strconv.FormatFloat(retData.MonthlyContribution, 'f', 0, 64) + "/mo", "text-indigo-600"},
+			{"$3.5M w/ contributions", cxLabel, "text-green-600"},
+			{"$3.5M coast only", coastLabel, "text-blue-600"},
+		} {
+			fmt.Fprintf(w,
+				`<div class="bg-white rounded-lg border border-gray-200 p-4">`+
+					`<div class="text-xs text-gray-500 uppercase mb-1">%s</div>`+
+					`<div class="text-xl font-bold %s">%s</div></div>`,
+				card.Title, card.Class, card.Val,
+			)
+		}
+
 	default:
 		http.NotFound(w, r)
 	}
