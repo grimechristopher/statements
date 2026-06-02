@@ -32,3 +32,6 @@ __pycache__/
 
 # Claude session state
 .claude/
+
+# Go binary
+pay-dashboard
