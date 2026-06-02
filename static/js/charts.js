@@ -379,7 +379,7 @@
         },
         scales: {
           x: { type: "time", min: data.chart_start || "2022-04-01", max: "2069-12-01", time: { unit: "year", displayFormats: { year: "yyyy" } }, ticks: { maxRotation: 0 } },
-          y: { min: 0, ticks: { callback: v => v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "k" } },
+          y: { min: 0, max: 6_000_000, ticks: { callback: v => v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "k" } },
         },
         elements: { point: { radius: 0 } },
       },
