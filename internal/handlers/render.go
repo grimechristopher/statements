@@ -36,6 +36,15 @@ var templateFuncs = template.FuncMap{
 		}
 		return template.JS(b), nil
 	},
+	// jsonAttr encodes v as JSON and returns a plain string — html/template
+	// will HTML-escape it in attribute context; browsers decode it on read.
+	"jsonAttr": func(v any) (string, error) {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	},
 	"deref": func(f *float64) float64 {
 		if f == nil {
 			return 0

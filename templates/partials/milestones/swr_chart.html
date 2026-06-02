@@ -1,6 +1,5 @@
 {{ define "partial" }}
 <h2 class="text-sm font-medium text-gray-600 mb-1">Annual SWR at 60 <span class="text-gray-400 font-normal">(coast, 4% rule)</span></h2>
 <p class="text-xs text-gray-400 mb-3">Should trend up as your balance grows</p>
-<script type="application/json" id="data-chart-swr">{{ toJSON .FIREData }}</script>
-<canvas id="chart-swr" style="min-height:220px"></canvas>
+<canvas id="chart-swr" data-chart-data="{{ jsonAttr .FIREData }}" style="min-height:220px"></canvas>
 {{ end }}

@@ -1,5 +1,4 @@
 {{ define "partial" }}
 <h2 class="text-sm font-medium text-gray-600 mb-3">Gross Pay Over Time</h2>
-<script type="application/json" id="data-chart-gross">{{ toJSON .GrossData }}</script>
-<canvas id="chart-gross"></canvas>
+<canvas id="chart-gross" data-chart-data="{{ jsonAttr .GrossData }}"></canvas>
 {{ end }}

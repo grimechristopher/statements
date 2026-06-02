@@ -306,13 +306,10 @@
 
   function initChartsIn(root) {
     root.querySelectorAll("canvas[id]").forEach((canvas) => {
-      const dataEl = root.querySelector(
-        `script[type="application/json"][id="data-${canvas.id}"]`
-      );
       const fn = chartInits[canvas.id];
-      if (fn && dataEl) {
+      if (fn && canvas.dataset.chartData) {
         try {
-          fn(canvas, JSON.parse(dataEl.textContent));
+          fn(canvas, JSON.parse(canvas.dataset.chartData));
         } catch (e) {
           console.error("chart init failed for", canvas.id, e);
         }

@@ -1,5 +1,4 @@
 {{ define "partial" }}
-<script type="application/json" id="data-chart-retirement">{{ toJSON .ChartData }}</script>
 <div x-data="{ series: ['history','current_rate','coast','contrib_401k_only'] }" class="space-y-3">
   <div class="flex flex-wrap gap-2 text-xs">
     <button @click="series.includes('history') ? series = series.filter(s=>s!='history') : series.push('history')"
@@ -15,6 +14,6 @@
       :class="series.includes('contrib_401k_only') ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'"
       class="px-2 py-1 rounded">401k Only</button>
   </div>
-  <canvas id="chart-retirement" style="min-height:300px"></canvas>
+  <canvas id="chart-retirement" data-chart-data="{{ jsonAttr .ChartData }}" style="min-height:300px"></canvas>
 </div>
 {{ end }}
