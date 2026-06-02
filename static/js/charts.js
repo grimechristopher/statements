@@ -78,6 +78,7 @@
         plugins: {
           legend: { display: datasets.length > 1 },
           tooltip: {
+            mode: "x", intersect: false, position: "cursor",
             callbacks: {
               afterBody(items) {
                 if (multi) return [];
@@ -122,7 +123,7 @@
       data: { datasets },
       options: {
         responsive: true,
-        plugins: { legend: { display: multi } },
+        plugins: { legend: { display: multi }, tooltip: { mode: "x", intersect: false, position: "cursor" } },
         scales: {
           x: TIME_X,
           y: { ticks: { callback: v => v.toFixed(1) + "%" } },
@@ -150,7 +151,7 @@
       data: { datasets },
       options: {
         responsive: true,
-        plugins: { legend: { display: multi } },
+        plugins: { legend: { display: multi }, tooltip: { mode: "x", intersect: false, position: "cursor" } },
         scales: {
           x: TIME_X,
           y: { ticks: { callback: v => v.toFixed(1) + "%" } },
@@ -239,7 +240,7 @@
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip: { mode: "x", intersect: false, position: "cursor" } },
         scales: { x: TIME_X, y: { ticks: { callback: v => v + "h" } } },
         elements: { point: { radius: 2 } },
       },
@@ -366,7 +367,7 @@
         plugins: {
           legend: { display: true, position: "top" },
           tooltip: {
-            mode: "x", intersect: false,
+            mode: "x", intersect: false, position: "cursor",
             callbacks: {
               title: items => {
                 if (!items.length) return "";
@@ -478,6 +479,16 @@
       }
     });
   }
+
+  // Custom positioner: x follows cursor, y snaps to nearest dataset point.
+  Chart.Tooltip.positioners.cursor = function(items, eventPos) {
+    if (!items.length) return { x: eventPos.x, y: eventPos.y };
+    const nearest = items.reduce((best, item) => {
+      const dy = Math.abs(item.element.y - eventPos.y);
+      return dy < best.dy ? { dy, item } : best;
+    }, { dy: Infinity, item: null }).item;
+    return { x: eventPos.x, y: nearest ? nearest.element.y : eventPos.y };
+  };
 
   document.addEventListener("htmx:afterSwap", e => initChartsIn(e.detail.target));
   document.addEventListener("DOMContentLoaded", () => initChartsIn(document));
