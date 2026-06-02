@@ -24,6 +24,34 @@
   </div>
 
   <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/taxes-pct"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/savings-pct"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/k401"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/hours"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
        hx-get="/partials/charts/annual"
        hx-trigger="load, change from:#person-filter"
        hx-include="#person-filter">

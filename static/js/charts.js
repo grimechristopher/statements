@@ -43,6 +43,50 @@
     });
   }
 
+  function initPctChart(canvas, data, label, color) {
+    destroy(canvas.id);
+    activeCharts[canvas.id] = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: data.dates,
+        datasets: [{
+          label: label,
+          data: data.vals,
+          borderColor: color,
+          backgroundColor: color.replace(")", ", 0.1)").replace("rgb", "rgba"),
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: (v) => v != null ? v.toFixed(1) + "%" : "" } } },
+      },
+    });
+  }
+
+  function initBarChart(canvas, data, label, color, yPrefix) {
+    destroy(canvas.id);
+    activeCharts[canvas.id] = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: data.dates,
+        datasets: [{
+          label: label,
+          data: data.vals,
+          backgroundColor: color,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: (v) => yPrefix + v.toLocaleString() } } },
+      },
+    });
+  }
+
   function initAnnualChart(canvas, data) {
     destroy(canvas.id);
     activeCharts[canvas.id] = new Chart(canvas, {
@@ -297,11 +341,15 @@
   }
 
   const chartInits = {
-    "chart-gross": initGrossChart,
-    "chart-annual": initAnnualChart,
-    "chart-retirement": initRetirementChart,
-    "chart-fire-year": initFireYearChart,
-    "chart-swr": initSWRChart,
+    "chart-gross":        initGrossChart,
+    "chart-taxes-pct":    (c, d) => initPctChart(c, d, "Tax %",     "rgb(239,68,68)"),
+    "chart-savings-pct":  (c, d) => initPctChart(c, d, "Savings %", "rgb(16,185,129)"),
+    "chart-401k":         (c, d) => initBarChart(c, d, "401k",      "#6366f1", "$"),
+    "chart-hours":        (c, d) => initBarChart(c, d, "Hours",     "#f59e0b", ""),
+    "chart-annual":       initAnnualChart,
+    "chart-retirement":   initRetirementChart,
+    "chart-fire-year":    initFireYearChart,
+    "chart-swr":          initSWRChart,
   };
 
   function initChartsIn(root) {

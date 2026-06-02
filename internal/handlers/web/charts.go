@@ -51,6 +51,66 @@ func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 			GrossData: grossData{Dates: dates, Gross: gross, Inflation: inflation},
 		})
 
+	case "taxes-pct":
+		type seriesData struct {
+			Dates []string   `json:"dates"`
+			Vals  []*float64 `json:"vals"`
+		}
+		dates := make([]string, len(rows))
+		vals := make([]*float64, len(rows))
+		for i, r := range rows {
+			dates[i] = r.Date
+			vals[i] = r.TaxesPct
+		}
+		handlers.RenderPartial(w, "charts/taxes_pct", struct{ Data seriesData }{
+			Data: seriesData{Dates: dates, Vals: vals},
+		})
+
+	case "savings-pct":
+		type seriesData struct {
+			Dates []string   `json:"dates"`
+			Vals  []*float64 `json:"vals"`
+		}
+		dates := make([]string, len(rows))
+		vals := make([]*float64, len(rows))
+		for i, r := range rows {
+			dates[i] = r.Date
+			vals[i] = r.SavingsPct
+		}
+		handlers.RenderPartial(w, "charts/savings_pct", struct{ Data seriesData }{
+			Data: seriesData{Dates: dates, Vals: vals},
+		})
+
+	case "k401":
+		type seriesData struct {
+			Dates []string   `json:"dates"`
+			Vals  []*float64 `json:"vals"`
+		}
+		dates := make([]string, len(rows))
+		vals := make([]*float64, len(rows))
+		for i, r := range rows {
+			dates[i] = r.Date
+			vals[i] = r.Total401k
+		}
+		handlers.RenderPartial(w, "charts/k401", struct{ Data seriesData }{
+			Data: seriesData{Dates: dates, Vals: vals},
+		})
+
+	case "hours":
+		type seriesData struct {
+			Dates []string   `json:"dates"`
+			Vals  []*float64 `json:"vals"`
+		}
+		dates := make([]string, len(rows))
+		vals := make([]*float64, len(rows))
+		for i, r := range rows {
+			dates[i] = r.Date
+			vals[i] = r.HoursWorked
+		}
+		handlers.RenderPartial(w, "charts/hours", struct{ Data seriesData }{
+			Data: seriesData{Dates: dates, Vals: vals},
+		})
+
 	case "annual":
 		type annualData struct {
 			Years   []string  `json:"years"`
