@@ -1,0 +1,177 @@
+{{ define "partial" }}
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+  <div class="mb-5">
+    <h2 class="text-sm font-semibold text-gray-700">Where You Stand — National Benchmarks</h2>
+    <p class="text-xs text-gray-400 mt-0.5">National benchmark comparisons</p>
+  </div>
+
+  <div class="space-y-5">
+
+    <div>
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Retirement Investments</span>
+        <span class="text-sm font-bold text-indigo-600 font-mono">{{ .Investments.BadgeText }}</span>
+      </div>
+      <div style="position:relative;margin-top:30px;margin-bottom:42px">
+        <div style="position:relative;height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+          <div style="height:100%;width:{{ .Investments.UserPct }}%;background:linear-gradient(to right,#bfdbfe,#4f46e5);border-radius:9999px"></div>
+          {{ range .Investments.Ticks }}
+          <div style="position:absolute;top:0;bottom:0;left:{{ .Pct }}%;width:1px;background:rgba(255,255,255,0.8)"></div>
+          {{ end }}
+        </div>
+        <div style="position:absolute;left:{{ .Investments.UserPct }}%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;text-align:center">
+          <div style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">{{ .Investments.BadgeText }}</div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #4f46e5;margin:0 auto"></div>
+        </div>
+        <div style="position:relative;height:38px;margin-top:5px">
+          {{ range .Investments.Ticks }}
+          <div style="position:absolute;top:0;left:{{ .Pct }}%;transform:translateX(-50%);text-align:center">
+            <div style="font-size:10px;color:#9ca3af">{{ .ShortLabel }}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">{{ .ValueStr }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Net Worth (investments + home equity)</span>
+        <span class="text-sm font-bold text-indigo-600 font-mono">{{ .NetWorth.BadgeText }}</span>
+      </div>
+      <div style="position:relative;margin-top:30px;margin-bottom:42px">
+        <div style="position:relative;height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+          <div style="height:100%;width:{{ .NetWorth.UserPct }}%;background:linear-gradient(to right,#bfdbfe,#4f46e5);border-radius:9999px"></div>
+          {{ range .NetWorth.Ticks }}
+          <div style="position:absolute;top:0;bottom:0;left:{{ .Pct }}%;width:1px;background:rgba(255,255,255,0.8)"></div>
+          {{ end }}
+        </div>
+        <div style="position:absolute;left:{{ .NetWorth.UserPct }}%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;text-align:center">
+          <div style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">{{ .NetWorth.BadgeText }}</div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #4f46e5;margin:0 auto"></div>
+        </div>
+        <div style="position:relative;height:38px;margin-top:5px">
+          {{ range .NetWorth.Ticks }}
+          <div style="position:absolute;top:0;left:{{ .Pct }}%;transform:translateX(-50%);text-align:center">
+            <div style="font-size:10px;color:#9ca3af">{{ .ShortLabel }}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">{{ .ValueStr }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+
+    {{ if .Salary.BadgeText }}
+    <div>
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Salary Benchmarks</span>
+        <span class="text-sm font-bold text-indigo-600 font-mono">{{ .Salary.BadgeText }}</span>
+      </div>
+      <div style="position:relative;margin-top:30px;margin-bottom:42px">
+        <div style="position:relative;height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+          <div style="height:100%;width:{{ .Salary.UserPct }}%;background:linear-gradient(to right,#bfdbfe,#4f46e5);border-radius:9999px"></div>
+          {{ range .Salary.Ticks }}
+          <div style="position:absolute;top:0;bottom:0;left:{{ .Pct }}%;width:1px;background:rgba(255,255,255,0.8)"></div>
+          {{ end }}
+        </div>
+        <div style="position:absolute;left:{{ .Salary.UserPct }}%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;text-align:center">
+          <div style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">{{ .Salary.BadgeText }}</div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #4f46e5;margin:0 auto"></div>
+        </div>
+        <div style="position:relative;height:38px;margin-top:5px">
+          {{ range .Salary.Ticks }}
+          <div style="position:absolute;top:0;left:{{ .Pct }}%;transform:translateX(-50%);text-align:center">
+            <div style="font-size:10px;color:#9ca3af">{{ .ShortLabel }}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">{{ .ValueStr }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 -mt-3">{{ .SalaryNote }}</p>
+    </div>
+
+    <div>
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Savings Rate (401k + Roth as % of gross)</span>
+        <span class="text-sm font-bold text-indigo-600 font-mono">{{ .SavingsRate.BadgeText }}</span>
+      </div>
+      <div style="position:relative;margin-top:30px;margin-bottom:42px">
+        <div style="position:relative;height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+          <div style="height:100%;width:{{ .SavingsRate.UserPct }}%;background:linear-gradient(to right,#bfdbfe,#4f46e5);border-radius:9999px"></div>
+          {{ range .SavingsRate.Ticks }}
+          <div style="position:absolute;top:0;bottom:0;left:{{ .Pct }}%;width:1px;background:rgba(255,255,255,0.8)"></div>
+          {{ end }}
+        </div>
+        <div style="position:absolute;left:{{ .SavingsRate.UserPct }}%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;text-align:center">
+          <div style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">{{ .SavingsRate.BadgeText }}</div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #4f46e5;margin:0 auto"></div>
+        </div>
+        <div style="position:relative;height:38px;margin-top:5px">
+          {{ range .SavingsRate.Ticks }}
+          <div style="position:absolute;top:0;left:{{ .Pct }}%;transform:translateX(-50%);text-align:center">
+            <div style="font-size:10px;color:#9ca3af">{{ .ShortLabel }}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">{{ .ValueStr }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Wealth Accumulation (Millionaire Next Door)</span>
+        <span class="text-sm font-bold text-indigo-600 font-mono">{{ .PAWScore.BadgeText }}</span>
+      </div>
+      <div style="position:relative;margin-top:30px;margin-bottom:42px">
+        <div style="position:relative;height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+          <div style="height:100%;width:{{ .PAWScore.UserPct }}%;background:linear-gradient(to right,#bfdbfe,#4f46e5);border-radius:9999px"></div>
+          {{ range .PAWScore.Ticks }}
+          <div style="position:absolute;top:0;bottom:0;left:{{ .Pct }}%;width:1px;background:rgba(255,255,255,0.8)"></div>
+          {{ end }}
+        </div>
+        <div style="position:absolute;left:{{ .PAWScore.UserPct }}%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;text-align:center">
+          <div style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">{{ .PAWScore.BadgeText }}</div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #4f46e5;margin:0 auto"></div>
+        </div>
+        <div style="position:relative;height:38px;margin-top:5px">
+          {{ range .PAWScore.Ticks }}
+          <div style="position:absolute;top:0;left:{{ .Pct }}%;transform:translateX(-50%);text-align:center">
+            <div style="font-size:10px;color:#9ca3af">{{ .ShortLabel }}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">{{ .ValueStr }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 -mt-3">{{ .PAWNote }}</p>
+    </div>
+
+    {{ if .Fidelity }}
+    <div class="border-t border-gray-100 pt-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Fidelity Savings Benchmarks</div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {{ range .Fidelity }}
+        <div class="rounded-lg p-2.5 text-center {{ if .Achieved }}bg-green-50{{ else }}bg-gray-50{{ end }}">
+          <div class="text-xs text-gray-400">By {{ .ByAge }}</div>
+          <div class="text-sm font-semibold text-gray-700">{{ .Label }}</div>
+          {{ if .Achieved }}
+            <div class="text-xs text-green-600 font-medium mt-1">&#10003; done</div>
+          {{ else }}
+            <div class="text-xs text-amber-500 font-medium mt-1">{{ .Progress }}% there</div>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+    {{ end }}
+
+  </div>
+
+  <div class="text-xs text-gray-400 border-t border-gray-100 pt-3 mt-4 space-y-0.5">
+    <div>Federal Reserve Survey of Consumer Finances (SCF) 2022 &middot; federalreserve.gov</div>
+    <div>Fidelity Investments savings rate guidelines 2024 &middot; fidelity.com</div>
+    <div>BLS Occupational Employment &amp; Wage Statistics (OEWS) 2023 &mdash; Los Angeles metro &middot; bls.gov</div>
+    <div>Thomas Stanley &amp; William Danko &mdash; &#34;The Millionaire Next Door&#34; (1996) PAW/UAW formula</div>
+  </div>
+</div>
+{{ end }}

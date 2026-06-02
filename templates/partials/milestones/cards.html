@@ -1,0 +1,74 @@
+{{ define "partial" }}
+{{ range .Groups }}
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+  <div class="flex items-baseline justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-700">{{ .Label }}</h2>
+    <span class="text-lg font-bold">{{ dollar .Current }}</span>
+  </div>
+  {{ range .Items }}
+  <div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 {{ if .Achieved }}opacity-60{{ end }}">
+    <div class="w-5 flex-shrink-0 text-center">
+      {{ if .Achieved }}
+        <svg class="w-4 h-4 text-green-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      {{ else }}
+        <div class="w-3 h-3 rounded-full border-2 border-gray-300 mx-auto"></div>
+      {{ end }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="text-sm {{ if .Achieved }}line-through text-gray-400{{ else }}text-gray-700{{ end }}">{{ .Label }}</span>
+        <span class="text-sm font-mono text-gray-500 flex-shrink-0">{{ dollar .Target }}</span>
+      </div>
+      {{ if not .Achieved }}
+      <div class="mt-1 flex items-center gap-2">
+        <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+          <div class="bg-blue-400 h-1.5 rounded-full" style="width:{{ .Pct }}%"></div>
+        </div>
+        <span class="text-xs text-gray-400 flex-shrink-0 w-8 text-right">{{ .Pct }}%</span>
+        {{ if .Projected }}
+          <span class="text-xs text-gray-400 flex-shrink-0">{{ .Projected.Date }} · age {{ .Projected.Age }}</span>
+        {{ else }}
+          <span class="text-xs text-gray-300 flex-shrink-0">beyond 2069</span>
+        {{ end }}
+      </div>
+      {{ else }}
+      <div class="mt-0.5 text-xs text-green-500">Achieved</div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ end }}
+
+{{ with .CoastFire }}
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+  <div class="flex items-baseline justify-between mb-2">
+    <h2 class="text-sm font-semibold text-gray-700">{{ .Label }}</h2>
+    {{ if .Current }}
+    <div class="text-right">
+      <div class="text-xs text-gray-400 mb-0.5">Projected at 60</div>
+      <div class="text-lg font-bold {{ if .Achieved }}text-green-600{{ end }}">{{ dollar (deref .Current) }}</div>
+      <div class="text-xs text-gray-400">target {{ dollar .Target }}</div>
+    </div>
+    {{ end }}
+  </div>
+  {{ if .Achieved }}
+    <div class="flex items-center gap-2 text-green-600 text-sm font-medium">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+      </svg>
+      Coast projection at 60 exceeds target
+    </div>
+  {{ else if .Current }}
+    <div class="mt-1 flex items-center gap-2">
+      <div class="flex-1 bg-gray-100 rounded-full h-2">
+        <div class="bg-blue-400 h-2 rounded-full" style="width:{{ .Pct }}%"></div>
+      </div>
+      <span class="text-xs text-gray-500">{{ .Pct }}%</span>
+    </div>
+  {{ end }}
+</div>
+{{ end }}
+{{ end }}

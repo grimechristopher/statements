@@ -1,0 +1,6 @@
+{{ define "partial" }}
+<h2 class="text-sm font-medium text-gray-600 mb-1">Years Until Retirement <span class="text-gray-400 font-normal">(with contributions, 10% growth)</span></h2>
+<p class="text-xs text-gray-400 mb-3">Countdown to FIRE — watch it drop</p>
+<script type="application/json" id="data-chart-fire-year">{{ toJSON .FIREData }}</script>
+<canvas id="chart-fire-year" style="min-height:220px"></canvas>
+{{ end }}
