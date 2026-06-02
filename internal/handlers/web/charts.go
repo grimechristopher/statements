@@ -21,6 +21,30 @@ func ChartsPage(w http.ResponseWriter, r *http.Request) {
 	handlers.RenderPage(w, "charts", chartsPageData{People: people})
 }
 
+// chartPoint is one {x, y} datum for a time-scale chart.
+type chartPoint struct {
+	X string  `json:"x"`
+	Y float64 `json:"y"`
+}
+
+// chartPoint2 carries an extra field (inflation or gross) for rich tooltips.
+type chartPoint2 struct {
+	X          string   `json:"x"`
+	Y          float64  `json:"y"`
+	Inflation  *float64 `json:"inflation,omitempty"`
+	Gross      *float64 `json:"gross,omitempty"`
+}
+
+type personSeries struct {
+	Person string       `json:"person"`
+	Points []chartPoint `json:"points"`
+}
+
+type personSeries2 struct {
+	Person string        `json:"person"`
+	Points []chartPoint2 `json:"points"`
+}
+
 func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/partials/charts/")
 	db := handlers.DBFrom(r.Context())
@@ -32,107 +56,149 @@ func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Group rows by person
+	personOrder := []string{}
+	byPerson := map[string][]services.ChartRow{}
+	for _, r := range rows {
+		if _, ok := byPerson[r.Person]; !ok {
+			personOrder = append(personOrder, r.Person)
+		}
+		byPerson[r.Person] = append(byPerson[r.Person], r)
+	}
+	multi := len(personOrder) > 1
+
 	switch path {
 	case "gross":
 		type grossData struct {
-			Dates     []string   `json:"dates"`
-			Gross     []*float64 `json:"gross"`
-			Inflation []*float64 `json:"inflation"`
+			Series      []personSeries2 `json:"series"`
+			MultiPerson bool            `json:"multi_person"`
 		}
-		dates := make([]string, len(rows))
-		gross := make([]*float64, len(rows))
-		inflation := make([]*float64, len(rows))
-		for i, r := range rows {
-			dates[i] = r.Date
-			gross[i] = r.Gross
-			inflation[i] = r.InflationGross
+		series := make([]personSeries2, 0, len(personOrder))
+		for _, p := range personOrder {
+			pts := make([]chartPoint2, 0, len(byPerson[p]))
+			for _, r := range byPerson[p] {
+				if r.Gross == nil {
+					continue
+				}
+				pts = append(pts, chartPoint2{X: r.Date, Y: *r.Gross, Inflation: r.InflationGross})
+			}
+			series = append(series, personSeries2{Person: p, Points: pts})
 		}
 		handlers.RenderPartial(w, "charts/gross", struct{ GrossData grossData }{
-			GrossData: grossData{Dates: dates, Gross: gross, Inflation: inflation},
+			GrossData: grossData{Series: series, MultiPerson: multi},
 		})
 
 	case "taxes-pct":
-		type seriesData struct {
-			Dates []string   `json:"dates"`
-			Vals  []*float64 `json:"vals"`
+		type pctData struct {
+			Series      []personSeries `json:"series"`
+			MultiPerson bool           `json:"multi_person"`
 		}
-		dates := make([]string, len(rows))
-		vals := make([]*float64, len(rows))
-		for i, r := range rows {
-			dates[i] = r.Date
-			vals[i] = r.TaxesPct
-		}
-		handlers.RenderPartial(w, "charts/taxes_pct", struct{ Data seriesData }{
-			Data: seriesData{Dates: dates, Vals: vals},
+		series := buildPctSeries(personOrder, byPerson, func(r services.ChartRow) *float64 { return r.TaxesPct })
+		handlers.RenderPartial(w, "charts/taxes_pct", struct{ Data pctData }{
+			Data: pctData{Series: series, MultiPerson: multi},
 		})
 
 	case "savings-pct":
-		type seriesData struct {
-			Dates []string   `json:"dates"`
-			Vals  []*float64 `json:"vals"`
+		type pctData struct {
+			Series      []personSeries `json:"series"`
+			MultiPerson bool           `json:"multi_person"`
 		}
-		dates := make([]string, len(rows))
-		vals := make([]*float64, len(rows))
-		for i, r := range rows {
-			dates[i] = r.Date
-			vals[i] = r.SavingsPct
-		}
-		handlers.RenderPartial(w, "charts/savings_pct", struct{ Data seriesData }{
-			Data: seriesData{Dates: dates, Vals: vals},
+		series := buildPctSeries(personOrder, byPerson, func(r services.ChartRow) *float64 { return r.SavingsPct })
+		handlers.RenderPartial(w, "charts/savings_pct", struct{ Data pctData }{
+			Data: pctData{Series: series, MultiPerson: multi},
 		})
 
 	case "k401":
-		type seriesData struct {
-			Dates []string   `json:"dates"`
-			Vals  []*float64 `json:"vals"`
+		type k401Data struct {
+			Series      []personSeries2 `json:"series"`
+			MultiPerson bool            `json:"multi_person"`
 		}
-		dates := make([]string, len(rows))
-		vals := make([]*float64, len(rows))
-		for i, r := range rows {
-			dates[i] = r.Date
-			vals[i] = r.Total401k
+		series := make([]personSeries2, 0, len(personOrder))
+		for _, p := range personOrder {
+			pts := make([]chartPoint2, 0, len(byPerson[p]))
+			for _, r := range byPerson[p] {
+				if r.Total401k == nil {
+					continue
+				}
+				pts = append(pts, chartPoint2{X: r.Date, Y: *r.Total401k, Gross: r.Gross})
+			}
+			series = append(series, personSeries2{Person: p, Points: pts})
 		}
-		handlers.RenderPartial(w, "charts/k401", struct{ Data seriesData }{
-			Data: seriesData{Dates: dates, Vals: vals},
+		handlers.RenderPartial(w, "charts/k401", struct{ Data k401Data }{
+			Data: k401Data{Series: series, MultiPerson: multi},
 		})
 
 	case "hours":
-		type seriesData struct {
-			Dates []string   `json:"dates"`
-			Vals  []*float64 `json:"vals"`
+		type hoursData struct {
+			Points []chartPoint `json:"points"`
 		}
-		dates := make([]string, len(rows))
-		vals := make([]*float64, len(rows))
-		for i, r := range rows {
-			dates[i] = r.Date
-			vals[i] = r.HoursWorked
+		pts := make([]chartPoint, 0, len(rows))
+		for _, r := range rows {
+			if r.HoursWorked != nil && *r.HoursWorked > 0 {
+				pts = append(pts, chartPoint{X: r.Date, Y: *r.HoursWorked})
+			}
 		}
-		handlers.RenderPartial(w, "charts/hours", struct{ Data seriesData }{
-			Data: seriesData{Dates: dates, Vals: vals},
+		handlers.RenderPartial(w, "charts/hours", struct{ Data hoursData }{
+			Data: hoursData{Points: pts},
 		})
 
 	case "annual":
-		type annualData struct {
-			Years   []string  `json:"years"`
+		type annualPerson struct {
+			Person  string    `json:"person"`
 			Gross   []float64 `json:"gross"`
 			Taxes   []float64 `json:"taxes"`
 			K401    []float64 `json:"k401"`
-			HSA     []float64 `json:"hsa"`
-			Savings []float64 `json:"savings"`
+			Takehome []float64 `json:"takehome"`
+		}
+		type annualData struct {
+			Years      []string       `json:"years"`
+			Gross      []float64      `json:"gross"`
+			Taxes      []float64      `json:"taxes"`
+			K401       []float64      `json:"k401"`
+			Takehome   []float64      `json:"takehome"`
+			MultiPerson bool          `json:"multi_person"`
+			ByPerson   []annualPerson `json:"by_person"`
 		}
 		years := make([]string, 0, len(ytd))
 		for y := range ytd {
 			years = append(years, y)
 		}
 		sort.Strings(years)
-		ad := annualData{Years: years}
+
+		// Per-person annual breakdown from rows
+		pYtd := map[string]map[string]struct{ gross, taxes, k401, takehome float64 }{}
+		for _, r := range rows {
+			yr := r.Date[:4]
+			if pYtd[r.Person] == nil {
+				pYtd[r.Person] = map[string]struct{ gross, taxes, k401, takehome float64 }{}
+			}
+			entry := pYtd[r.Person][yr]
+			entry.gross += fv64(r.Gross)
+			entry.taxes += fv64(r.TotalTaxes)
+			entry.k401 += fv64(r.Total401k)
+			entry.takehome += fv64(r.Takehome)
+			pYtd[r.Person][yr] = entry
+		}
+		byPersonAnnual := make([]annualPerson, 0, len(personOrder))
+		for _, p := range personOrder {
+			ap := annualPerson{Person: p}
+			for _, y := range years {
+				e := pYtd[p][y]
+				ap.Gross = append(ap.Gross, e.gross)
+				ap.Taxes = append(ap.Taxes, e.taxes)
+				ap.K401 = append(ap.K401, e.k401)
+				ap.Takehome = append(ap.Takehome, e.takehome)
+			}
+			byPersonAnnual = append(byPersonAnnual, ap)
+		}
+
+		ad := annualData{Years: years, MultiPerson: multi, ByPerson: byPersonAnnual}
 		for _, y := range years {
 			yr := ytd[y]
 			ad.Gross = append(ad.Gross, yr.Gross)
 			ad.Taxes = append(ad.Taxes, yr.Taxes)
 			ad.K401 = append(ad.K401, yr.K401)
-			ad.HSA = append(ad.HSA, yr.HSA)
-			ad.Savings = append(ad.Savings, yr.Savings)
+			ad.Takehome = append(ad.Takehome, yr.Takehome)
 		}
 		handlers.RenderPartial(w, "charts/annual", struct{ AnnualData annualData }{AnnualData: ad})
 
@@ -147,16 +213,22 @@ func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 		}
 		ly := ytd[years[len(years)-1]]
 		year := years[len(years)-1]
+		cardLabel := ""
+		if multi {
+			cardLabel = "Combined "
+		} else if len(personOrder) > 0 {
+			cardLabel = personOrder[0] + " "
+		}
 		w.Header().Set("Content-Type", "text/html")
 		for _, card := range []struct {
 			Title string
 			Val   float64
 			Class string
 		}{
-			{year + " Gross", ly.Gross, "text-gray-900"},
-			{year + " Taxes", ly.Taxes, "text-red-500"},
-			{year + " 401k", ly.K401, "text-green-600"},
-			{year + " Cash Saved", ly.Savings, "text-blue-600"},
+			{year + " " + cardLabel + "Gross", ly.Gross, "text-gray-900"},
+			{year + " " + cardLabel + "Taxes", ly.Taxes, "text-red-500"},
+			{year + " " + cardLabel + "401k", ly.K401, "text-green-600"},
+			{year + " " + cardLabel + "Cash Saved", ly.Savings, "text-blue-600"},
 		} {
 			fmt.Fprintf(w,
 				`<div class="bg-white rounded-lg border border-gray-200 p-4">`+
@@ -170,4 +242,27 @@ func ChartsPartialsRouter(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func buildPctSeries(personOrder []string, byPerson map[string][]services.ChartRow, field func(services.ChartRow) *float64) []personSeries {
+	series := make([]personSeries, 0, len(personOrder))
+	for _, p := range personOrder {
+		pts := make([]chartPoint, 0, len(byPerson[p]))
+		for _, r := range byPerson[p] {
+			v := field(r)
+			if v == nil {
+				continue
+			}
+			pts = append(pts, chartPoint{X: r.Date, Y: *v})
+		}
+		series = append(series, personSeries{Person: p, Points: pts})
+	}
+	return series
+}
+
+func fv64(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
 }
