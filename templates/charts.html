@@ -1,0 +1,34 @@
+{{ define "content" }}
+<div class="flex items-center gap-4 mb-6">
+  <h1 class="text-xl font-semibold">Charts</h1>
+  <select id="person-filter" name="person_id" class="border rounded px-2 py-1 text-sm">
+    <option value="">All People</option>
+    {{ range .People }}
+      <option value="{{ .ID }}">{{ .Name }}</option>
+    {{ end }}
+  </select>
+</div>
+
+<div id="summary-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+     hx-get="/partials/charts/summary-cards"
+     hx-trigger="load"
+     hx-include="#person-filter"></div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/gross"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-4"
+       hx-get="/partials/charts/annual"
+       hx-trigger="load, change from:#person-filter"
+       hx-include="#person-filter">
+    <div class="text-sm text-gray-400">Loading…</div>
+  </div>
+
+</div>
+{{ end }}
