@@ -1,0 +1,42 @@
+{{ define "content" }}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Account Balances</h1>
+  <div class="flex items-center gap-3">
+    <button id="sync-btn"
+      class="text-sm bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 disabled:opacity-50"
+      hx-post="/api/monarch/sync"
+      hx-target="#sync-status"
+      hx-swap="innerHTML">
+      Sync from Monarch
+    </button>
+    <span id="sync-status" class="text-sm text-gray-500"></span>
+  </div>
+</div>
+
+<form method="get" class="flex gap-3 mb-4 text-sm">
+  <select name="account_id" class="border rounded px-2 py-1">
+    <option value="">All Accounts</option>
+    {{ range .Accounts }}
+      <option value="{{ .ID }}" {{ if eq (printf "%d" .ID) $.AccountFilter }}selected{{ end }}>{{ .Name }}</option>
+    {{ end }}
+  </select>
+  <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded">Filter</button>
+  <a href="/balances" class="text-gray-400 hover:text-gray-600 px-2 py-1">Clear</a>
+</form>
+
+<div id="balances-table-container"
+     hx-get="/partials/balances/table{{ if .AccountFilter }}?account_id={{ .AccountFilter }}{{ end }}"
+     hx-trigger="load, refresh"
+     hx-swap="innerHTML">
+  <div class="text-sm text-gray-400">Loading…</div>
+</div>
+
+<div class="mt-8 bg-white rounded-lg border border-gray-200 p-4">
+  <h2 class="text-sm font-medium text-gray-600 mb-3">Investment Projections</h2>
+  <div hx-get="/partials/charts/retirement"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <div class="text-sm text-gray-400">Loading chart…</div>
+  </div>
+</div>
+{{ end }}
