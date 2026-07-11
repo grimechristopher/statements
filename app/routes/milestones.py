@@ -1,4 +1,5 @@
 import math
+import os
 from datetime import date, timedelta
 
 from flask import Blueprint, jsonify, render_template, request
@@ -45,9 +46,10 @@ def _current_investment(db):
     return float(row["total"] or 0)
 
 
-# down payment date - matches the ~$246k balance drop that jumped the FIRE
-# projection by 5 years in a single snapshot
-HOUSE_PURCHASE_DATE = "2024-12-19"
+# life event marking a large one-time balance drop (e.g. a down payment) —
+# the FIRE trend line is measured from this date forward. Falls back to the
+# full history if unset.
+HOUSE_PURCHASE_DATE = os.environ.get("HOUSE_PURCHASE_DATE", "")
 
 
 def _linear_trend(points, start_date, year_field="fire_year"):
@@ -91,6 +93,50 @@ def _find_crossing(points, target):
     return None
 
 
+def _find_historical_crossing(history, target):
+    """history: ascending list of (date_str, value) tuples of actual past balances.
+
+    Returns the most recent below->at/above transition, not the first ever
+    crossing, so a big withdrawal (e.g. a house down payment) that drops you
+    back under a milestone correctly requires re-crossing it."""
+    crossing = None
+    was_above = False
+    for d, v in history:
+        above = v >= target
+        if above and not was_above:
+            crossing = {"date": d, "age": int(d[:4]) - BIRTH_YEAR}
+        was_above = above
+    return crossing
+
+
+def _months_since(start_date, end_date):
+    start = date.fromisoformat(start_date)
+    end = date.fromisoformat(end_date)
+    if end < start:
+        return None
+    return round((end - start).days / 30.4375)
+
+
+def _historical_totals(db):
+    active_ids = [
+        r["id"] for r in db.execute("""
+            SELECT a.id FROM accounts a
+            WHERE a.type = 'brokerage' AND a.name NOT IN ({})
+        """.format(",".join("?" * len(EXCLUDE))), list(EXCLUDE)).fetchall()
+    ]
+    if not active_ids:
+        return []
+    rows = db.execute("""
+        SELECT ab.date, a.id, ab.balance
+        FROM account_balances ab
+        JOIN accounts a ON ab.account_id = a.id
+        WHERE a.id IN ({})
+        ORDER BY ab.date ASC
+    """.format(",".join("?" * len(active_ids))), active_ids).fetchall()
+    total_by_date = _forward_fill_totals(rows)
+    return sorted(total_by_date.items())
+
+
 def _monthly_contribution(db):
     row = db.execute("""
         SELECT AVG(total_401k) as avg FROM (
@@ -122,6 +168,7 @@ def milestones_data():
     today = date.today().isoformat()
     _, contrib_pts, _, _ = _build_projections(today, current_investment, monthly_contribution)
     coast_pts, _, _, _   = _build_projections(today, current_investment, 0)
+    history = _historical_totals(db)
 
     def nw_items():
         fixed = [
@@ -133,15 +180,21 @@ def milestones_data():
             ("3M",   3_000_000),
             ("3.5M", 3_500_000),
         ]
-        multiples = [(f"{x}x salary", salary * x) for x in [0.5, 1, 2, 3, 5, 10, 25]] if salary else []
+        # 1x/2x/3x/6x/8x match the published Fidelity by-age savings benchmarks
+        multiples = [(f"{x}x salary", salary * x) for x in [0.5, 1, 2, 3, 6, 8, 10, 25]] if salary else []
         items = []
         for label, target in fixed + multiples:
             if not target:
                 continue
+            achieved = current_investment >= target
+            crossed = _find_historical_crossing(history, target) if achieved else None
+            if crossed and label == "Pre-house level":
+                crossed["since_house_months"] = _months_since(HOUSE_PURCHASE_DATE, crossed["date"])
             items.append({
                 "label": label,
                 "target": target,
-                "achieved": current_investment >= target,
+                "achieved": achieved,
+                "crossed": crossed,
                 "projected": _find_crossing(contrib_pts, target),
             })
         return items
@@ -161,10 +214,12 @@ def milestones_data():
             if not target:
                 continue
             nw_needed = target * 25
+            achieved = current_4pct >= target
             items.append({
                 "label": label,
                 "target": target,
-                "achieved": current_4pct >= target,
+                "achieved": achieved,
+                "crossed": _find_historical_crossing(history, nw_needed) if achieved else None,
                 "projected": _find_crossing(contrib_pts, nw_needed),
             })
         return items

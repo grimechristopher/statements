@@ -111,33 +111,7 @@
     <!-- Fidelity benchmarks -->
     <div class="border-t border-gray-100 pt-4">
       <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Fidelity Savings Benchmarks</div>
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <div class="bg-green-50 rounded-lg p-2.5 text-center">
-          <div class="text-xs text-gray-400">By 30</div>
-          <div class="text-sm font-semibold text-gray-700">1× salary</div>
-          <div class="text-xs text-green-600 font-medium mt-1">✓ done</div>
-        </div>
-        <div class="rounded-lg p-2.5 text-center bg-gray-50" id="fid-35-card">
-          <div class="text-xs text-gray-400">By 35</div>
-          <div class="text-sm font-semibold text-gray-700">2× salary</div>
-          <div id="bm-fid35" class="text-xs mt-1 text-gray-400">—</div>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-          <div class="text-xs text-gray-400">By 40</div>
-          <div class="text-sm font-semibold text-gray-700">3× salary</div>
-          <div class="text-xs text-gray-400 mt-1">on track</div>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-          <div class="text-xs text-gray-400">By 50</div>
-          <div class="text-sm font-semibold text-gray-700">6× salary</div>
-          <div class="text-xs text-gray-400 mt-1">on track</div>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-          <div class="text-xs text-gray-400">By 60</div>
-          <div class="text-sm font-semibold text-gray-700">8× salary</div>
-          <div class="text-xs text-gray-400 mt-1">on track</div>
-        </div>
-      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="fidelity-benchmarks"></div>
       <div class="text-xs text-gray-400 mt-2">Only 49% of under-35s have any retirement savings (SCF 2022)</div>
     </div>
 
@@ -149,6 +123,8 @@
     <div>Fidelity Investments savings rate guidelines 2024 · fidelity.com</div>
     <div>BLS Occupational Employment & Wage Statistics (OEWS) 2023 — Los Angeles metro area · bls.gov</div>
     <div>Thomas Stanley & William Danko — "The Millionaire Next Door" (1996) PAW/UAW formula</div>
+    <div>U.S. Bureau of Economic Analysis, Personal Saving Rate — overall savings, not retirement-specific · bea.gov</div>
+    <div>FIRE savings-rate marks (25%/50%+): 4%-rule years-to-FI math, popularized by Mr. Money Mustache — community rule of thumb, not a formal study</div>
     <div class="text-gray-300 mt-1">Percentile estimates are approximations based on published distribution data.</div>
   </div>
 </div>
@@ -164,26 +140,62 @@ function pct(current, target) {
   return Math.min(100, Math.round(current / target * 100));
 }
 
+// 1x/2x/3x/6x/8x match the published Fidelity by-age savings benchmarks
 const RECOMMENDED_AGES = {
-  "0.5x salary": 25,
-  "1x salary":   30,
-  "2x salary":   35,
-  "3x salary":   40,
-  "5x salary":   45,
-  "10x salary":  60,
-  "25x salary":  null, // FIRE — no standard age
+  "1x salary": 30,
+  "2x salary": 35,
+  "3x salary": 40,
+  "6x salary": 50,
+  "8x salary": 60,
 };
+
+const FIDELITY_BENCHMARKS = [
+  { age: 30, mult: 1 },
+  { age: 35, mult: 2 },
+  { age: 40, mult: 3 },
+  { age: 50, mult: 6 },
+  { age: 60, mult: 8 },
+];
+
+// Investment-balance percentile lookup (SCF 2022) — shared by the "Where You
+// Stand" bars and the per-milestone "Nth %ile at the time" crossing tags.
+const INV_LOOKUP = [
+  [0, 2], [1000, 10], [6000, 25], [18880, 50],
+  [55000, 75], [130000, 90], [220000, 95], [500000, 99]
+];
 
 function milestoneRow(item, current) {
   const achieved = item.achieved;
   const p = pct(current, item.target);
   const recAge = RECOMMENDED_AGES[item.label];
-  const recTag = recAge != null
-    ? `<span class="text-gray-400 text-xs ml-1">· rec. by ${recAge}</span>`
-    : "";
+
+  let recTag = "";
+  if (recAge != null) {
+    if (achieved && item.crossed) {
+      const diff = recAge - item.crossed.age;
+      recTag = diff > 0
+        ? `<span class="text-green-600 text-xs ml-1">· ${diff} yr${diff === 1 ? "" : "s"} ahead of rec. age ${recAge}</span>`
+        : diff < 0
+          ? `<span class="text-amber-500 text-xs ml-1">· ${-diff} yr${diff === -1 ? "" : "s"} behind rec. age ${recAge}</span>`
+          : `<span class="text-gray-400 text-xs ml-1">· right on rec. age ${recAge}</span>`;
+    } else {
+      recTag = `<span class="text-gray-400 text-xs ml-1">· rec. by ${recAge}</span>`;
+    }
+  }
+
   const proj = item.projected
     ? `<span class="text-gray-400">${item.projected.date} · age ${item.projected.age}</span>`
     : `<span class="text-gray-300">beyond 2069</span>`;
+
+  let achievedLine = "Achieved";
+  if (achieved && item.crossed) {
+    const monthYear = new Date(item.crossed.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const pctile = Math.round(estimatePct(item.target, INV_LOOKUP));
+    achievedLine = `Achieved ${monthYear} · age ${item.crossed.age} · ${pctile}th %ile at the time`;
+    if (item.crossed.since_house_months != null) {
+      achievedLine += ` · ${item.crossed.since_house_months} mo after buying the house`;
+    }
+  }
 
   return `
     <div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 ${achieved ? 'opacity-60' : ''}">
@@ -207,7 +219,7 @@ function milestoneRow(item, current) {
             <span class="text-xs flex-shrink-0">${proj}</span>
           </div>
         ` : `
-          <div class="mt-0.5 text-xs text-green-500">Achieved</div>
+          <div class="mt-0.5 text-xs text-green-500">${achievedLine}</div>
         `}
       </div>
     </div>
@@ -328,16 +340,12 @@ fetch("/api/milestones-data")
     document.getElementById("bm-investments").textContent = fmt$(inv);
     document.getElementById("bm-networth").textContent = fmt$(netWorth);
 
-    const invLookup = [
-      [0, 2], [1000, 10], [6000, 25], [18880, 50],
-      [55000, 75], [130000, 90], [220000, 95], [500000, 99]
-    ];
     const nwLookup = [
       [-50000, 5], [5000, 25], [39040, 50],
       [120000, 75], [280000, 90], [450000, 95], [1000000, 99]
     ];
 
-    renderPercentileBar("bar-investments", estimatePct(inv, invLookup), [
+    renderPercentileBar("bar-investments", estimatePct(inv, INV_LOOKUP), [
       { pct: 25, shortLabel: "25th", valueStr: "$6k" },
       { pct: 50, shortLabel: "median", valueStr: "$18.9k" },
       { pct: 75, shortLabel: "75th", valueStr: "$55k" },
@@ -371,10 +379,17 @@ fetch("/api/milestones-data")
       const savingsRate = salary > 0 ? (monthly401k + monthlyRoth) / (salary / 12) * 100 : 0;
       const srPos = Math.min(100, savingsRate / 50 * 100);
       document.getElementById("bm-savings-rate").textContent = savingsRate.toFixed(1) + "%";
+      // "avg American" is BEA's overall personal saving rate (all savings, not
+      // retirement-specific) — a different metric than 401k+Roth %, shown for
+      // rough context only. "recommended 15%" is Fidelity's own income-savings
+      // guideline (same source as the by-age benchmarks below). 25%/50%+ come
+      // from the standard FIRE savings-rate-to-years-to-FI math (4% rule),
+      // popularized by Mr. Money Mustache's "Shockingly Simple Math" post —
+      // a community rule of thumb, not a formal study like the other bars here.
       renderPercentileBar("bar-savings-rate", srPos, [
-        { pct: 10,  shortLabel: "avg American", valueStr: "~5%" },
-        { pct: 30,  shortLabel: "recommended",  valueStr: "15%" },
-        { pct: 50,  shortLabel: "FIRE",          valueStr: "25%" },
+        { pct: 10,  shortLabel: "avg American (all savings)", valueStr: "~5%" },
+        { pct: 30,  shortLabel: "Fidelity rec.",  valueStr: "15%" },
+        { pct: 50,  shortLabel: "FIRE (~4% rule)",          valueStr: "25%" },
         { pct: 100, shortLabel: "extreme FIRE",  valueStr: "50%+" },
       ], savingsRate.toFixed(1) + "% saved");
 
@@ -384,7 +399,9 @@ fetch("/api/milestones-data")
       const expectedNW = age * salary / 10;
       const pawScore = expectedNW > 0 ? netWorth / expectedNW : 0;
       const pawPos = Math.min(97, pawScore / 3 * 100);
-      const pawLabel = pawScore >= 2 ? "PAW" : pawScore >= 1 ? "Avg" : "UAW";
+      // Stanley & Danko's own cutoffs: PAW >= 2x expected, UAW <= 0.5x expected.
+      // 0.5x-2x has no official book label; this app calls that range "Avg".
+      const pawLabel = pawScore >= 2 ? "PAW" : pawScore > 0.5 ? "Avg" : "UAW";
       document.getElementById("bm-paw-score").textContent = pawScore.toFixed(2) + "×";
       document.getElementById("bm-paw-note").textContent =
         `Expected NW at ${age}: ${fmt$(expectedNW)} — you're ${pawScore.toFixed(1)}× that (${pawLabel})`;
@@ -394,18 +411,27 @@ fetch("/api/milestones-data")
         { pct: Math.round(2.0/3*100), shortLabel: "PAW",  valueStr: "2.0×" },
       ], pawScore.toFixed(2) + "× expected");
 
-      const target35 = salary * 2;
-      const fid35 = document.getElementById("bm-fid35");
-      const fid35card = document.getElementById("fid-35-card");
-      if (inv >= target35) {
-        fid35.textContent = "✓ done";
-        fid35.className = "text-xs text-green-600 font-medium mt-1";
-        fid35card.classList.replace("bg-gray-50", "bg-green-50");
-      } else {
-        const p = Math.round(inv / target35 * 100);
-        fid35.textContent = p + "% there";
-        fid35.className = "text-xs text-amber-500 font-medium mt-1";
-      }
+      document.getElementById("fidelity-benchmarks").innerHTML = FIDELITY_BENCHMARKS.map(b => {
+        const target = salary * b.mult;
+        const p = Math.round(inv / target * 100);
+        let bg, status;
+        if (inv >= target) {
+          bg = "bg-green-50";
+          status = '<div class="text-xs text-green-600 font-medium mt-1">✓ done</div>';
+        } else if (age < b.age) {
+          bg = "bg-gray-50";
+          status = `<div class="text-xs text-amber-500 font-medium mt-1">${p}% there</div>`;
+        } else {
+          bg = "bg-red-50";
+          status = `<div class="text-xs text-red-500 font-medium mt-1">${p}% · behind</div>`;
+        }
+        return `
+          <div class="rounded-lg p-2.5 text-center ${bg}">
+            <div class="text-xs text-gray-400">By ${b.age}</div>
+            <div class="text-sm font-semibold text-gray-700">${b.mult}× salary</div>
+            ${status}
+          </div>`;
+      }).join("");
     }
   });
 

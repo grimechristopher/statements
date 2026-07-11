@@ -1,6 +1,7 @@
 import pytest
 
-from app.routes.milestones import _linear_trend
+from app.routes.balances import BIRTH_YEAR
+from app.routes.milestones import _linear_trend, _find_historical_crossing, _months_since
 
 
 def _pt(date, fire_year):
@@ -81,3 +82,50 @@ def test_linear_trend_behind_schedule_has_flatter_slope():
     trend = _linear_trend(points, "2024-12-19")
     assert trend["slope_per_year"] == 0.0
     assert trend["ahead_of_schedule"] is False
+
+
+def test_find_historical_crossing_returns_none_when_never_reached():
+    history = [("2024-01-01", 100_000), ("2024-06-01", 200_000)]
+    assert _find_historical_crossing(history, 300_000) is None
+
+
+def test_find_historical_crossing_returns_first_date_at_or_above_target():
+    history = [
+        ("2024-01-01", 250_000),
+        ("2024-06-01", 310_000),
+        ("2024-12-01", 400_000),
+    ]
+    crossing = _find_historical_crossing(history, 300_000)
+    assert crossing["date"] == "2024-06-01"
+    assert crossing["age"] == 2024 - BIRTH_YEAR
+
+
+def test_find_historical_crossing_returns_most_recent_recrossing_after_a_dip():
+    # touched the target, dropped back below (e.g. a big withdrawal), then
+    # crossed again -- the *latest* recrossing is what "achieved" should mean
+    history = [
+        ("2024-01-01", 290_000),
+        ("2024-03-01", 305_000),
+        ("2024-04-01", 295_000),
+        ("2024-06-01", 310_000),
+    ]
+    crossing = _find_historical_crossing(history, 300_000)
+    assert crossing["date"] == "2024-06-01"
+
+
+def test_find_historical_crossing_unchanged_when_never_dips_back_below():
+    history = [
+        ("2024-01-01", 250_000),
+        ("2024-06-01", 310_000),
+        ("2024-12-01", 400_000),
+    ]
+    crossing = _find_historical_crossing(history, 300_000)
+    assert crossing["date"] == "2024-06-01"
+
+
+def test_months_since_counts_whole_months_between_dates():
+    assert _months_since("2024-12-19", "2026-02-19") == 14
+
+
+def test_months_since_returns_none_when_end_precedes_start():
+    assert _months_since("2024-12-19", "2024-01-01") is None
