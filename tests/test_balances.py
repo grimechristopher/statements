@@ -1,28 +1,36 @@
-import json
+import pytest
+
 from app.db import get_db
 
 
 def _seed_balances(db):
     db.execute(
         "INSERT INTO accounts (monarch_id, name, type, institution) VALUES (?,?,?,?)",
-        ("m1", "Checking", "checking", "Chase")
+        ("m1", "Fidelity 401k", "brokerage", "Fidelity")
     )
     db.execute(
         "INSERT INTO accounts (monarch_id, name, type, institution) VALUES (?,?,?,?)",
-        ("m2", "Credit Card", "credit", "Chase")
+        ("m2", "Vanguard Brokerage", "brokerage", "Vanguard")
+    )
+    db.execute(
+        "INSERT INTO accounts (monarch_id, name, type, institution) VALUES (?,?,?,?)",
+        ("m3", "Checking", "checking", "Chase")
     )
     db.commit()
     db.execute(
         "INSERT INTO account_balances (account_id, date, balance) VALUES (1, '2026-01-01', 1000.0)"
     )
     db.execute(
-        "INSERT INTO account_balances (account_id, date, balance) VALUES (2, '2026-01-01', -200.0)"
+        "INSERT INTO account_balances (account_id, date, balance) VALUES (2, '2026-01-01', 500.0)"
+    )
+    db.execute(
+        "INSERT INTO account_balances (account_id, date, balance) VALUES (3, '2026-01-01', 300.0)"
     )
     db.execute(
         "INSERT INTO account_balances (account_id, date, balance) VALUES (1, '2026-02-01', 1500.0)"
     )
     db.execute(
-        "INSERT INTO account_balances (account_id, date, balance) VALUES (2, '2026-02-01', -300.0)"
+        "INSERT INTO account_balances (account_id, date, balance) VALUES (2, '2026-02-01', 600.0)"
     )
     db.commit()
 
@@ -39,25 +47,26 @@ def test_balance_chart_data_returns_expected_structure(client, app):
     response = client.get("/api/balance-chart-data")
     assert response.status_code == 200
     data = response.get_json()
-    assert "accounts" in data
-    assert "net_worth" in data
+    assert "total_history" in data
+    assert "projections" in data
 
 
-def test_balance_chart_data_net_worth_is_assets_minus_liabilities(client, app):
+def test_balance_chart_data_totals_include_only_brokerage_accounts(client, app):
     with app.app_context():
         _seed_balances(get_db())
 
     response = client.get("/api/balance-chart-data")
     data = response.get_json()
-    # net worth on 2026-01-01: 1000 + (-200) = 800
-    nw = {p["date"]: p["value"] for p in data["net_worth"]}
-    assert nw["2026-01-01"] == pytest.approx(800.0)
-    assert nw["2026-02-01"] == pytest.approx(1200.0)
+    # brokerage-only totals: checking account (300.0) must be excluded
+    totals = {p["date"]: p["value"] for p in data["total_history"]}
+    assert totals["2026-01-01"] == pytest.approx(1500.0)
+    assert totals["2026-02-01"] == pytest.approx(2100.0)
 
 
 def test_sync_missing_credentials_returns_error(client, monkeypatch):
-    monkeypatch.delenv("MONARCH_EMAIL", raising=False)
-    monkeypatch.delenv("MONARCH_PASSWORD", raising=False)
+    monkeypatch.delenv("MONARCH_SESSION_ID", raising=False)
+    monkeypatch.delenv("MONARCH_CSRF_TOKEN", raising=False)
+    monkeypatch.delenv("MONARCH_CF_CLEARANCE", raising=False)
     response = client.post("/api/monarch/sync")
     assert response.status_code == 500
     data = response.get_json()
@@ -75,18 +84,11 @@ def test_sync_stores_accounts_and_balances(client, app, monkeypatch):
         }
     ]
 
-    class FakeMonarch:
-        async def login(self, email, password, mfa_secret_key=None):
-            pass
-
-        async def get_accounts(self):
-            return {"accounts": fake_accounts}
-
-    monkeypatch.setenv("MONARCH_EMAIL", "test@example.com")
-    monkeypatch.setenv("MONARCH_PASSWORD", "secret")
-
     import app.routes.balances as balances_mod
-    monkeypatch.setattr(balances_mod, "_make_monarch_client", lambda: FakeMonarch())
+    monkeypatch.setattr(
+        balances_mod, "_monarch_gql",
+        lambda query, variables=None: {"data": {"accounts": fake_accounts}},
+    )
 
     response = client.post("/api/monarch/sync")
     assert response.status_code == 200
@@ -103,6 +105,3 @@ def test_sync_stores_accounts_and_balances(client, app, monkeypatch):
         ).fetchone()
         assert bal is not None
         assert bal["balance"] == 5000.0
-
-
-import pytest
