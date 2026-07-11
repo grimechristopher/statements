@@ -45,6 +45,44 @@ def _current_investment(db):
     return float(row["total"] or 0)
 
 
+# down payment date - matches the ~$246k balance drop that jumped the FIRE
+# projection by 5 years in a single snapshot
+HOUSE_PURCHASE_DATE = "2024-12-19"
+
+
+def _linear_trend(points, start_date, year_field="fire_year"):
+    pts = [
+        (p["date"], p[year_field] - int(p["date"][:4]))
+        for p in points if p["date"] >= start_date
+    ]
+    if len(pts) < 2:
+        return None
+
+    x0 = date.fromisoformat(pts[0][0])
+    xs = [(date.fromisoformat(d) - x0).days / 365.25 for d, _ in pts]
+    ys = [y for _, y in pts]
+
+    n = len(xs)
+    mean_x = sum(xs) / n
+    mean_y = sum(ys) / n
+    var_x = sum((x - mean_x) ** 2 for x in xs)
+    if var_x == 0:
+        return None
+    slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / var_x
+
+    start_value = ys[0]  # anchor to the actual observed value, not the fitted intercept
+    reference_end_value = start_value - xs[-1]
+
+    return {
+        "start_date": pts[0][0],
+        "end_date": pts[-1][0],
+        "slope_per_year": round(slope, 3),
+        "start_value": round(start_value, 3),
+        "reference_end_value": round(reference_end_value, 3),
+        "ahead_of_schedule": slope < -1.02,  # small tolerance for date-math float noise
+    }
+
+
 def _find_crossing(points, target):
     for p in points:
         if p["value"] >= target:
@@ -225,6 +263,8 @@ def fire_progress_data():
         "birth_year": BIRTH_YEAR,
         "target_year": BIRTH_YEAR + 60,
         "target_swr": round(T * 0.04, 2),
+        "trend": _linear_trend(points, HOUSE_PURCHASE_DATE, "fire_year"),
+        "trend_401k": _linear_trend(points, HOUSE_PURCHASE_DATE, "fire_year_401k_only"),
     })
 
 

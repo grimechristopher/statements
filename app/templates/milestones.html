@@ -40,6 +40,7 @@
     <h2 class="text-sm font-medium text-gray-600 mb-1">Years Until Retirement <span class="text-gray-400 font-normal">(with contributions, 10% growth)</span></h2>
     <p class="text-xs text-gray-400 mb-3">Countdown to FIRE — watch it drop</p>
     <canvas id="chart-fire-year" style="min-height:220px"></canvas>
+    <p id="trend-summary" class="text-xs text-gray-500 mt-2"></p>
   </div>
   <div class="bg-white rounded-lg border border-gray-200 p-4">
     <h2 class="text-sm font-medium text-gray-600 mb-1">Annual SWR at 60 <span class="text-gray-400 font-normal">(coast, 4% rule)</span></h2>
@@ -410,9 +411,13 @@ fetch("/api/milestones-data")
 
 fetch("/api/fire-progress-data")
   .then(r => r.json())
-  .then(({ points, target_year, target_swr, birth_year }) => {
+  .then(({ points, target_year, target_swr, birth_year, trend, trend_401k }) => {
     const _birthYear = birth_year;
     if (!points.length) return;
+
+    const MS_PER_YEAR = 365.25 * 24 * 3600 * 1000;
+    const refValueAt = (t, dateMs) =>
+      t ? t.start_value - (dateMs - new Date(t.start_date).getTime()) / MS_PER_YEAR : null;
 
     const fireYearPlugin = {
       id: "fireYearTarget",
@@ -484,7 +489,31 @@ fetch("/api/fire-progress-data")
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
-        }]
+        }, ...(trend ? [{
+          label: "On-schedule (401k + Roth)",
+          data: [
+            { x: trend.start_date, y: trend.start_value },
+            { x: trend.end_date, y: trend.reference_end_value },
+          ],
+          borderColor: "#9ca3af",
+          backgroundColor: "transparent",
+          fill: false,
+          borderWidth: 1.5,
+          borderDash: [3, 3],
+          pointRadius: 0,
+        }] : []), ...(trend_401k ? [{
+          label: "On-schedule (401k only)",
+          data: [
+            { x: trend_401k.start_date, y: trend_401k.start_value },
+            { x: trend_401k.end_date, y: trend_401k.reference_end_value },
+          ],
+          borderColor: "#6b7280",
+          backgroundColor: "transparent",
+          fill: false,
+          borderWidth: 1.5,
+          borderDash: [1, 3],
+          pointRadius: 0,
+        }] : [])]
       },
       plugins: [fireYearPlugin],
       options: {
@@ -500,7 +529,18 @@ fetch("/api/fire-progress-data")
               label: i => {
                 const yrs = Math.round(i.parsed.y);
                 const fireYear = parseInt(new Date(i.parsed.x).getFullYear()) + yrs;
-                return `${i.dataset.label}: ${yrs} yrs → FIRE ${fireYear} (age ${fireYear - _birthYear})`;
+                let line = `${i.dataset.label}: ${yrs} yrs → FIRE ${fireYear} (age ${fireYear - _birthYear})`;
+
+                const seriesTrend = i.dataset.label === "401k + Roth" ? trend
+                  : i.dataset.label === "401k only" ? trend_401k
+                  : null;
+                if (seriesTrend && i.parsed.x >= new Date(seriesTrend.start_date).getTime()) {
+                  const ref = refValueAt(seriesTrend, i.parsed.x);
+                  const delta = i.parsed.y - ref;
+                  const dir = delta < 0 ? "ahead of" : "behind";
+                  line += ` — ${delta >= 0 ? "+" : ""}${delta.toFixed(1)} yrs ${dir} schedule`;
+                }
+                return line;
               }
             }
           }
@@ -516,11 +556,31 @@ fetch("/api/fire-progress-data")
       }
     });
 
+    const trendSummary = document.getElementById("trend-summary");
+    const summaryLines = [];
+    if (trend) {
+      const label = trend.ahead_of_schedule ? "beating schedule" : "behind schedule";
+      summaryLines.push(
+        { text: `401k + Roth since house: ${trend.slope_per_year.toFixed(2)} yrs/yr vs. -1.00 on-schedule — ${label}`,
+          ahead: trend.ahead_of_schedule });
+    }
+    if (trend_401k) {
+      const label = trend_401k.ahead_of_schedule ? "beating schedule" : "behind schedule";
+      summaryLines.push(
+        { text: `401k only since house: ${trend_401k.slope_per_year.toFixed(2)} yrs/yr vs. -1.00 on-schedule — ${label}`,
+          ahead: trend_401k.ahead_of_schedule });
+    }
+    if (summaryLines.length) {
+      trendSummary.innerHTML = summaryLines
+        .map(l => `<div class="${l.ahead ? "text-green-600" : "text-amber-600"}">${l.text}</div>`)
+        .join("");
+    }
+
     new Chart(document.getElementById("chart-swr").getContext("2d"), {
       type: "line",
       data: {
         datasets: [{
-          label: "Annual SWR at 65",
+          label: "Annual SWR at 60",
           data: points.map(p => ({ x: p.date, y: p.coast_swr_annual })),
           borderColor: "#10b981",
           backgroundColor: "rgba(16,185,129,0.07)",
