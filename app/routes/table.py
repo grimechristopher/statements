@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for
 from app.db import get_db
 
@@ -26,9 +27,18 @@ def index():
     if source_filter:
         query += " AND ps.source = ?"
         params.append(source_filter)
-    query += " ORDER BY ps.pay_date DESC"
-
     rows = db.execute(query, params).fetchall()
+
+    def _parse_date(s):
+        s = (s or "").strip()
+        for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(s, fmt)
+            except ValueError:
+                pass
+        return datetime.min
+
+    rows = sorted(rows, key=lambda r: _parse_date(r["pay_date"]), reverse=True)
     people = get_people()
     sources = [r[0] for r in db.execute("SELECT DISTINCT source FROM pay_statements ORDER BY source").fetchall()]
     return render_template("table.html", rows=rows, people=people, sources=sources,
@@ -46,7 +56,7 @@ def update_row(row_id):
     db = get_db()
     f = request.form
     def fv(key):
-        val = f.get(key, "").strip()
+        val = f.get(key, "").strip().replace(",", "")
         return float(val) if val else None
 
     gross = fv("gross")
@@ -88,7 +98,7 @@ def add_row():
     db = get_db()
     f = request.form
     def fv(key):
-        val = f.get(key, "").strip()
+        val = f.get(key, "").strip().replace(",", "")
         return float(val) if val else None
 
     gross = fv("gross")

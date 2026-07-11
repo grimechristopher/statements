@@ -1,4 +1,6 @@
+import json
 import os
+from urllib import request as urllib_request
 from flask import Blueprint, render_template, jsonify, request
 from app.db import get_db
 
@@ -30,6 +32,31 @@ _CPI = {
     "2026-04": 333.020, "2026-05": 333.020,
 }
 _CPI_BASE = _CPI["2022-04"]
+
+def _refresh_cpi():
+    """Pull latest CPI-U (CUUR0000SA0) months from BLS and merge them in.
+    Best-effort: any failure just leaves the hardcoded table as-is."""
+    try:
+        req = urllib_request.Request(
+            "https://api.bls.gov/publicAPI/v2/timeseries/data/CUUR0000SA0",
+            headers={"User-Agent": "pay-dashboard/1.0"},
+        )
+        with urllib_request.urlopen(req, timeout=5) as resp:
+            payload = json.loads(resp.read())
+        for point in payload["Results"]["series"][0]["data"]:
+            period = point["period"]
+            if not period.startswith("M") or period == "M13":
+                continue  # skip annual-average rows
+            try:
+                value = float(point["value"])
+            except ValueError:
+                continue  # BLS uses "-" for suppressed/not-yet-final values
+            ym = f"{point['year']}-{period[1:]}"
+            _CPI[ym] = value
+    except Exception as e:
+        print(f"[charts] CPI refresh skipped: {e}")
+
+_refresh_cpi()
 
 def _inflation_adjusted(iso_date):
     if not _BASE_SALARY_BIWEEKLY:

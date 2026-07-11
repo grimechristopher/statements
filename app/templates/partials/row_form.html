@@ -11,7 +11,7 @@
         {% endfor %}
       </select>
     </td>
-    <td class="px-2 py-1"><input name="source" value="{{ row.source if row else 'Safran' }}" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
+    <td class="px-2 py-1"><input name="source" value="{{ row.source if row else 'NET' }}" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
     <td class="px-2 py-1"><input name="hours_worked" value="{{ row.hours_worked if row and row.hours_worked else '' }}" class="w-16 border rounded px-1 py-0.5 text-xs" placeholder="80.5"></td>
     <td class="px-2 py-1"><input name="gross" value="{{ row.gross if row and row.gross else '' }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="3500"></td>
     <td class="px-2 py-1"><input name="total_taxes" value="{{ row.total_taxes if row and row.total_taxes else '' }}" class="w-20 border rounded px-1 py-0.5 text-xs" placeholder="850"></td>
