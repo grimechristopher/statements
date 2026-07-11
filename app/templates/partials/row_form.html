@@ -7,7 +7,7 @@
     <td class="px-2 py-1">
       <select name="person_id" class="border rounded px-1 py-0.5 text-xs">
         {% for p in people %}
-          <option value="{{ p.id }}" {{ 'selected' if row and row.person_id == p.id else '' }}>{{ p.name }}</option>
+          <option value="{{ p.id }}" {{ 'selected' if (row and row.person_id == p.id) or (not row and p.name == 'Chris') else '' }}>{{ p.name }}</option>
         {% endfor %}
       </select>
     </td>

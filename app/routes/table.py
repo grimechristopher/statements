@@ -16,6 +16,7 @@ def fmt(val, decimals=2):
 @bp.route("/")
 def index():
     db = get_db()
+    people = get_people()
     person_filter = request.args.get("person_id", "")
     source_filter = request.args.get("source", "")
 
@@ -39,7 +40,6 @@ def index():
         return datetime.min
 
     rows = sorted(rows, key=lambda r: _parse_date(r["pay_date"]), reverse=True)
-    people = get_people()
     sources = [r[0] for r in db.execute("SELECT DISTINCT source FROM pay_statements ORDER BY source").fetchall()]
     return render_template("table.html", rows=rows, people=people, sources=sources,
                            person_filter=person_filter, source_filter=source_filter)
