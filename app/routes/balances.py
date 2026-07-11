@@ -51,6 +51,29 @@ def _monarch_gql(query, variables=None):
         raise
 
 
+def _forward_fill_totals(rows):
+    """Sum account balances by date, carrying each account's last known value forward.
+
+    Prevents dates where only one account has a snapshot (e.g. Coinbase daily)
+    from dragging the total down while others are silent.
+    """
+    from collections import defaultdict
+    acct_history = defaultdict(list)
+    for r in rows:
+        acct_history[r["id"]].append((r["date"], r["balance"] or 0))
+
+    all_dates = sorted({r["date"] for r in rows})
+    latest = {}
+    total_by_date = {}
+    for d in all_dates:
+        for aid, history in acct_history.items():
+            for (date, bal) in history:
+                if date == d:
+                    latest[aid] = bal
+        total_by_date[d] = sum(latest.values())
+    return total_by_date
+
+
 def _balance_rows(db, account_id=None):
     if account_id:
         return db.execute("""
@@ -257,11 +280,7 @@ def balance_chart_data():
         ORDER BY ab.date ASC
     """, list(all_brokerage_ids)).fetchall()
 
-    total_by_date = {}
-    for r in rows:
-        d = r["date"]
-        total_by_date[d] = total_by_date.get(d, 0) + (r["balance"] or 0)
-
+    total_by_date = _forward_fill_totals(rows)
     sorted_dates = sorted(total_by_date)
     total_history = [{"date": d, "value": round(total_by_date[d], 2)} for d in sorted_dates]
 

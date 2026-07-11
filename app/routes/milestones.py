@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from flask import Blueprint, jsonify, render_template, request
 
 from app.db import get_db
-from app.routes.balances import ANNUAL_RETURN, BIRTH_YEAR, RETIREMENT_TARGET, _build_projections
+from app.routes.balances import ANNUAL_RETURN, BIRTH_YEAR, RETIREMENT_TARGET, _build_projections, _forward_fill_totals
 
 bp = Blueprint("milestones", __name__)
 
@@ -88,6 +88,7 @@ def milestones_data():
     def nw_items():
         fixed = [
             ("300k",   300_000),
+            ("Pre-house level", 380_000),
             ("500k",   500_000),
             ("1M",   1_000_000),
             ("2M",   2_000_000),
@@ -172,13 +173,15 @@ def fire_progress_data():
     if not all_brokerage_ids:
         return jsonify({"points": [], "target_year": BIRTH_YEAR + 60, "target_swr": RETIREMENT_TARGET * 0.04})
 
-    rows = db.execute("""
-        SELECT ab.date, SUM(ab.balance) as total
+    raw_rows = db.execute("""
+        SELECT ab.date, a.id, ab.balance
         FROM account_balances ab
+        JOIN accounts a ON ab.account_id = a.id
         WHERE ab.account_id IN ({})
-        GROUP BY ab.date
         ORDER BY ab.date ASC
     """.format(",".join("?" * len(all_brokerage_ids))), all_brokerage_ids).fetchall()
+
+    total_by_date = _forward_fill_totals(raw_rows)
 
     r = ANNUAL_RETURN / 12
     C = monthly_contribution
@@ -196,9 +199,8 @@ def fire_progress_data():
         return (date.fromisoformat(d) + timedelta(days=n_months * 30.4375)).year
 
     points = []
-    for row in rows:
-        d = row["date"]
-        B = float(row["total"] or 0)
+    for d, B in sorted(total_by_date.items()):
+        B = float(B or 0)
         if B <= 0:
             continue
 
